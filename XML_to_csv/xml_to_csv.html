@@ -1,0 +1,54 @@
+<html><head><link type="text/css" rel="stylesheet" href="http://syntax.rubyforge.org/stylesheets/ruby.css" /></head><body><div class="ruby"><pre><span class="comment">#</span>
+<span class="comment"># xml_to_csv (ruby 1.8)</span>
+<span class="comment"># </span>
+<span class="comment">#</span>
+<span class="comment"># - XML to CSV file transformation via windows32 ole and excel api controls</span>
+<span class="comment">#</span>
+<span class="ident">require</span> <span class="punct">'</span><span class="string">win32ole</span><span class="punct">'</span>
+<span class="ident">require</span> <span class="punct">'</span><span class="string">optparse</span><span class="punct">'</span>
+
+<span class="ident">version</span> <span class="punct">=</span> <span class="punct">&quot;</span><span class="string">1.0.1</span><span class="punct">&quot;</span>
+<span class="ident">safe</span><span class="punct">=</span><span class="constant">false</span>
+
+<span class="ident">opts</span> <span class="punct">=</span> <span class="constant">OptionParser</span><span class="punct">.</span><span class="ident">new</span> <span class="keyword">do</span> <span class="punct">|</span><span class="ident">opts</span><span class="punct">|</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">banner</span> <span class="punct">=</span> <span class="punct">&quot;</span><span class="string">Usage: xml_to_csv.rb [options] </span><span class="punct">&quot;</span>
+  
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">on</span><span class="punct">(&quot;</span><span class="string">-x</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">--xml VAL</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">XML input file to convert.</span><span class="punct">&quot;)</span>    <span class="punct">{|</span><span class="constant">XML_IN</span><span class="punct">|}</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">on</span><span class="punct">(&quot;</span><span class="string">-c</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">--csv VAL</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">CSV output file to saveas..</span><span class="punct">&quot;)</span>  <span class="punct">{|</span><span class="constant">CSV_OUT</span><span class="punct">|}</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">on</span><span class="punct">(&quot;</span><span class="string">-s</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">--[no-]safe</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">Enable or disable file overwrite.</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">default: (disabled)</span><span class="punct">&quot;)</span> <span class="punct">{|</span><span class="ident">value</span><span class="punct">|</span> <span class="ident">safe</span> <span class="punct">=</span> <span class="ident">value</span><span class="punct">}</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">separator</span> <span class="punct">&quot;</span><span class="string">Common options:</span><span class="punct">&quot;</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">on_tail</span><span class="punct">(&quot;</span><span class="string">-h</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">-?</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">--help</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">Show this message</span><span class="punct">&quot;)</span> <span class="punct">{</span><span class="ident">puts</span> <span class="ident">opts</span><span class="punct">;</span> <span class="ident">exit</span><span class="punct">}</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">on_tail</span><span class="punct">(&quot;</span><span class="string">--version</span><span class="punct">&quot;,</span> <span class="punct">&quot;</span><span class="string">Show version</span><span class="punct">&quot;)</span> <span class="punct">{</span><span class="ident">puts</span> <span class="punct">&quot;</span><span class="string">xml_to_csv.rb - version: </span><span class="punct">&quot;</span> <span class="punct">+</span> <span class="ident">version</span><span class="punct">;</span> <span class="ident">exit</span><span class="punct">}</span>
+  <span class="ident">opts</span><span class="punct">.</span><span class="ident">parse!</span>
+<span class="keyword">end</span> 
+
+<span class="keyword">def </span><span class="method">exists?</span><span class="punct">(</span><span class="ident">symbol</span><span class="punct">)</span>
+  <span class="ident">eval</span> <span class="punct">&quot;</span><span class="string"><span class="expr">#{symbol}</span></span><span class="punct">&quot;</span>
+<span class="keyword">rescue</span>
+  <span class="constant">false</span>
+<span class="keyword">end</span>
+
+<span class="keyword">unless</span> <span class="ident">exists?</span> <span class="symbol">:XML_IN</span>
+  <span class="ident">print</span> <span class="punct">&quot;</span><span class="string">XML input File: </span><span class="punct">&quot;</span>
+  <span class="constant">XML_IN</span> <span class="punct">=</span> <span class="constant">STDIN</span><span class="punct">.</span><span class="ident">gets</span><span class="punct">.</span><span class="ident">chomp</span>
+<span class="keyword">end</span>
+
+<span class="keyword">unless</span> <span class="ident">exists?</span> <span class="symbol">:CSV_OUT</span>
+  <span class="ident">print</span> <span class="punct">&quot;</span><span class="string">CSV output File: </span><span class="punct">&quot;</span>
+  <span class="constant">CSV_OUT</span> <span class="punct">=</span> <span class="constant">STDIN</span><span class="punct">.</span><span class="ident">gets</span><span class="punct">.</span><span class="ident">chomp</span>
+<span class="keyword">end</span>
+
+<span class="keyword">def </span><span class="method">xml_to_csv</span><span class="punct">(</span><span class="ident">in_file</span><span class="punct">,</span> <span class="ident">out_file</span><span class="punct">,</span><span class="ident">safe</span><span class="punct">)</span>
+  <span class="ident">excel</span> <span class="punct">=</span> <span class="constant">WIN32OLE</span><span class="punct">.</span><span class="ident">new</span><span class="punct">('</span><span class="string">Excel.Application</span><span class="punct">')</span>
+     <span class="comment"># excel['Visible'] = true</span>
+     <span class="ident">excel</span><span class="punct">.</span><span class="ident">workbooks</span><span class="punct">.</span><span class="ident">openxml</span><span class="punct">({'</span><span class="string">Filename</span><span class="punct">'=&gt;</span><span class="ident">in_file</span><span class="punct">,</span> <span class="punct">'</span><span class="string">LoadOption</span><span class="punct">'=&gt;</span><span class="number">2</span><span class="punct">})</span>
+     <span class="keyword">if</span> <span class="keyword">not</span> <span class="ident">safe</span>
+      <span class="ident">excel</span><span class="punct">.</span><span class="ident">DisplayAlerts</span> <span class="punct">=</span> <span class="number">0</span>  <span class="comment">#Hide last warning message</span>
+     <span class="ident">end</span> 
+     <span class="ident">excel</span><span class="punct">.</span><span class="ident">ActiveWorkbook</span><span class="punct">.</span><span class="ident">SaveAs</span><span class="punct">({'</span><span class="string">Filename</span><span class="punct">'=&gt;</span><span class="ident">out_file</span><span class="punct">,</span> <span class="punct">'</span><span class="string">FileFormat</span><span class="punct">'=&gt;</span><span class="number">24</span><span class="punct">,</span> <span class="punct">'</span><span class="string">CreateBackup</span><span class="punct">'=&gt;'</span><span class="string">False</span><span class="punct">'})</span>
+     <span class="ident">excel</span><span class="punct">.</span><span class="ident">DisplayAlerts</span> <span class="punct">=</span> <span class="number">0</span>
+     <span class="ident">excel</span><span class="punct">.</span><span class="ident">Quit</span>
+<span class="ident">end</span>
+
+<span class="ident">xml_to_csv</span><span class="punct">(</span><span class="constant">XML_IN</span><span class="punct">,</span><span class="constant">CSV_OUT</span><span class="punct">,</span> <span class="ident">safe</span><span class="punct">)</span>
+</pre></div></body></html>
