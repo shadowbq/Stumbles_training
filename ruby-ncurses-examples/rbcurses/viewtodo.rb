@@ -218,6 +218,9 @@ module ViewTodo
         col  c
         width table_width
         height table_height
+        #show_selector true
+        selected_color :green
+        selected_bgcolor :blue
         #title "A Table"
         #title_attrib (Ncurses::A_REVERSE | Ncurses::A_BOLD)
         cell_editing_allowed false
@@ -252,6 +255,7 @@ module ViewTodo
         tcm.column(5).width 8 # Status
         tcm.column(6).width 20 # Timestamp
       end
+      
       
       ########################################################################
       ## NCurses Command Bindings (callbacks)
@@ -335,6 +339,10 @@ module ViewTodo
         bind_key(?|) {
           atable.scroll_forward
         }
+        
+        bind_key(?:, app) {|ncursetable,todoapp| 
+          app.show_email(ncursetable,todoapp)
+        }
 
         bind_key(?>) {
           colcount = tcm.column_count-1
@@ -349,8 +357,8 @@ module ViewTodo
           #atable.move_column sel_col.value, sel_col.value-1 unless sel_col.value == 0
         }
         
-        bind_key(?\\, app) {|tab,td| 
-          $log.debug " BIND... #{tab.class}, #{td.class}" 
+        bind_key(?\\, app) {|ncursetable, todoapp| 
+          $log.debug " BIND... #{ncursetable.class}, #{todoapp.class}" 
           app.make_popup atable
         }
         
@@ -409,7 +417,7 @@ module ViewTodo
       tablemenu = RubyCurses::PopupMenu.new "Table"
       
       tablemenu.add(item = RubyCurses::PMenuItem.new("&Open"))
-      item.command() { @save_cmd.call }
+      item.command() { @open_cmd.call }
       
       tablemenu.insert_separator 1
       
@@ -463,6 +471,48 @@ module ViewTodo
       tablemenu.show @atable, 0,1
     end
     
+    def show_email(tab,td)
+      #w = arr.max_by(&:length).length
+      vh = FFI::NCurses.LINES - 10
+      vw = FFI::NCurses.COLS - 20
+
+      require 'rbcurse/core/util/viewer'
+      
+      arr = []
+      arr << ""
+      arr << "Serial Number: #{tab.get_value_at(tab.focussed_row,0)}"
+      arr << "Status: #{tab.get_value_at(tab.focussed_row,5)}"
+      arr << "Date Time Stamp: #{tab.get_value_at(tab.focussed_row,6)}"
+      arr << ""
+      arr << "Category: #{tab.get_value_at(tab.focussed_row,1)} \t\t Module:#{tab.get_value_at(tab.focussed_row,2)}"
+      arr << ""
+      arr << "Priority: #{tab.get_value_at(tab.focussed_row,3)}"
+      arr << ""
+      arr << "Task: #{tab.get_value_at(tab.focussed_row,4)}"
+      arr << ""
+      arr << " -- HOTKEYS -- "
+      arr << " q | F10 -  Close View "
+      if DEBUG
+        arr << ""
+        arr << " --- DEBUG MENU -------------------------------------------"
+        arr << " BIND... #{tab.class}, #{td.class}" 
+        arr << " Selected Row: #{tab.selected_row}"
+        arr << " Focused Row:  #{tab.focussed_row}"
+      end
+      defarr = arr
+      
+      RubyCurses::Viewer.view(arr, :layout => [2, 4, vh, vw],:close_key => KEY_F10, :title => "[ Show Task ]", :print_footer => true) do |t|
+        # you may configure textview further here.
+        #t.suppress_borders true
+        t.color = :black
+        t.bgcolor = :white
+
+        # help was provided, so default help is provided in second buffer
+        t.add_content defarr, :title => ' Current Task '
+        
+      end
+    end
+    
     private
     
     ########################################################################
@@ -499,6 +549,11 @@ module ViewTodo
         todo.dump
       }
       
+      #refactor - Add a SQL insertion
+      @open_cmd = lambda {
+        show_email(atable,todo)
+      }
+      
       #refactor - Currently just removes view of row, not database entry
       @del_cmd = lambda { 
         row = atable.focussed_row
@@ -515,6 +570,8 @@ module ViewTodo
       }
 
     end
+    
+
     
     def app_key_labels
       key_labels = [
@@ -544,6 +601,8 @@ end # module
 # Main Execution Loop
 
 if $0 == __FILE__
+  
+  DEBUG = FALSE
   include RubyCurses
   include RubyCurses::Utils
 
