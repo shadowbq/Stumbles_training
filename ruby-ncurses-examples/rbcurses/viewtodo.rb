@@ -340,7 +340,7 @@ module ViewTodo
           atable.scroll_forward
         }
         
-        bind_key(?:, app) {|ncursetable,todoapp| 
+        bind_key(KEY_ENTER, app) {|ncursetable,todoapp| 
           app.show_email(ncursetable,todoapp)
         }
 
