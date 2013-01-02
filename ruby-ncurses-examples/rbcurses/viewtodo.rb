@@ -506,8 +506,7 @@ module ViewTodo
         #t.suppress_borders true
         t.color = :black
         t.bgcolor = :white
-
-        # help was provided, so default help is provided in second buffer
+                
         t.add_content defarr, :title => ' Current Task '
         
       end
